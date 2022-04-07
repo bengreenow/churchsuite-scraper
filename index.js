@@ -16,20 +16,21 @@ const HTMLParser = require("node-html-parser");
     ]);
     console.log("Navigated to page");
 
-    await page.keyboard.type(process.env.USERNAME);
+    await page.keyboard.type(process.env.CHURCHSUITE_USERNAME);
     await Promise.all([
         page.keyboard.press("Enter"),
         page.waitForNavigation({ waitUntil: "networkidle2" }),
     ]);
     console.log("Username ✅");
 
-    await page.keyboard.type(process.env.PASSWORD);
+    await page.keyboard.type(process.env.CHURCHSUITE_PASSWORD);
     await Promise.all([
         page.keyboard.press("Enter"),
         page.waitForNavigation({ waitUntil: "networkidle2" }),
     ]);
     console.log("Password ✅");
 
+    // todo loop over all rotas
     await page.goto(
         `https://${process.env.TENET_NAME}.churchsuite.com/my/rotas`
     );
