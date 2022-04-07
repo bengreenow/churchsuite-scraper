@@ -36,23 +36,67 @@ const HTMLParser = require("node-html-parser");
     );
 
     const rotas = await page.$$(".my-rotas > .ca-panel-tbl > .tbl-row");
+    const rotaCount = rotas.length;
 
-    await Promise.all([rotas[0].click(), page.waitForSelector(".rota")]);
-    await page.waitForSelector(".rota-date[data-dateid]");
+    const allRotas = [];
+    for (let i = 0; i < rotaCount; i++) {
+        const rotas = await page.$$(".my-rotas > .ca-panel-tbl > .tbl-row");
 
-    const rotaElements = await page.$$(".rota-date[data-dateid]");
+        await Promise.all([rotas[i].click(), page.waitForSelector(".rota")]);
+        console.log(`Rota Clicked ${i + 1} ✅`);
 
-    const rotaHTML = rotaElements.map(async (rota) => {
-        return await rota.evaluate((el) => {
-            return {
-                date: el.getAttribute("data-datename"),
-                html: el.innerHTML,
-            };
+        await page.waitForSelector(".rota-date[data-dateid]");
+        const rotaElements = await page.$$(".rota-date[data-dateid]");
+        console.log(`Rota ${i + 1} loaded ✅`);
+
+        const rotaHTML = rotaElements.map(async (rota) => {
+            return await rota.evaluate((el) => {
+                return {
+                    date: new Date(
+                        el
+                            .getAttribute("data-datename")
+                            .replace(/(am|pm|AM|PM)/g, " $1") // add space before am / pm so JS can parse
+                    ),
+                    html: el.innerHTML,
+                };
+            });
         });
-    });
-    const htmlText = await Promise.all(rotaHTML);
+        const htmlText = await Promise.all(rotaHTML);
 
-    console.log(parse(htmlText));
+        const currentRota = {
+            rotaName: await rotas[i].evaluate(async (el) => {
+                return el.querySelector("a[href]").textContent;
+            }),
+            rotaId: await rotas[i].evaluate(async (el) => {
+                return el
+                    .querySelector("a[href]")
+                    .getAttribute("href")
+                    .replace("/my/rotas/", "");
+            }),
+            dates: parse(htmlText),
+        };
+
+        allRotas.push(currentRota);
+
+        // go back to rotas
+        await page.goto(
+            `https://${process.env.TENET_NAME}.churchsuite.com/my/rotas`
+        );
+        await page.screenshot({ path: `beforegoto${i}.png` });
+        console.log(`Back to rotas page ✅`);
+    }
+
+    const fs = require("fs");
+
+    const storeData = (data, path) => {
+        try {
+            fs.writeFileSync(path, JSON.stringify(data));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    storeData(allRotas, "allrotas.json");
 
     await page.screenshot({ path: "example.png" });
 
@@ -70,15 +114,16 @@ const parse = (strings) => {
 
     return HTMLObjects.map((x) => {
         const roles = x.html.querySelectorAll("[data-personid]").map((y) => {
+            // console.log(y.querySelector(".profile-name"));
             return {
                 personId: y.getAttribute("data-personid"),
-                roles: y.querySelector(".roles").textContent.split(", "),
+                roles: y.querySelector(".roles")?.textContent.split(", "),
                 name: removeTabsAndNewlines(
-                    y.querySelector(".profile-name").textContent
+                    y.querySelector(".profile-name")?.textContent
                 ),
                 status: y
                     .querySelector(".profile-name")
-                    .getAttribute("data-status"),
+                    ?.getAttribute("data-status"),
                 // .getAttribute("data-status"),
             };
         });
@@ -90,5 +135,8 @@ const parse = (strings) => {
 };
 
 const removeTabsAndNewlines = (string) => {
+    if (!string) {
+        return string;
+    }
     return string.replace(/(\r\n|\n|\r|\t)/gm, "");
 };
