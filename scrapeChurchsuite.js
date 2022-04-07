@@ -30,7 +30,6 @@ const HTMLParser = require("node-html-parser");
     ]);
     console.log("Password ✅");
 
-    // todo loop over all rotas
     await page.goto(
         `https://${process.env.TENET_NAME}.churchsuite.com/my/rotas`
     );
@@ -67,6 +66,11 @@ const HTMLParser = require("node-html-parser");
             rotaName: await rotas[i].evaluate(async (el) => {
                 return el.querySelector("a[href]").textContent;
             }),
+            serviceName: await rotas[i].evaluate(async (el) => {
+                return el
+                    .querySelector(".text-muted")
+                    .textContent.replace(" - ", "");
+            }),
             rotaId: await rotas[i].evaluate(async (el) => {
                 return el
                     .querySelector("a[href]")
@@ -82,7 +86,6 @@ const HTMLParser = require("node-html-parser");
         await page.goto(
             `https://${process.env.TENET_NAME}.churchsuite.com/my/rotas`
         );
-        await page.screenshot({ path: `beforegoto${i}.png` });
         console.log(`Back to rotas page ✅`);
     }
 
@@ -96,9 +99,7 @@ const HTMLParser = require("node-html-parser");
         }
     };
 
-    storeData(allRotas, "allrotas.json");
-
-    await page.screenshot({ path: "example.png" });
+    storeData(allRotas, "rotas.json");
 
     await browser.close();
 })();
