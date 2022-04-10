@@ -55,7 +55,7 @@ const HTMLParser = require("node-html-parser");
                         el
                             .getAttribute("data-datename")
                             .replace(/(am|pm|AM|PM)/g, " $1") // add space before am / pm so JS can parse
-                    ),
+                    ).toISOString(),
                     html: el.innerHTML,
                 };
             });

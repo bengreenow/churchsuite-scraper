@@ -2,6 +2,7 @@
   "dependencies": {
     "@types/puppeteer": "^5.4.5",
     "dotenv": "^16.0.0",
+    "googleapis": "39",
     "node-html-parser": "^5.3.3",
     "puppeteer": "^13.5.2"
   }
