@@ -26,18 +26,96 @@ const createServiceHeaders = () => {
     return result;
 };
 
+const createTable = () => {
+    const flattenedRotas = rotaData
+        .map((serviceSlot) => {
+            return serviceSlot.dates.map((serviceDateRota) => {
+                return { ...serviceDateRota, rotaName: serviceSlot.rotaName };
+            });
+        })
+        .flat(2);
+    const sortedRotas = flattenedRotas.sort((a, b) => {
+        return Date.parse(a.date) - Date.parse(b.date);
+    });
+
+    const allOccurances = {};
+    sortedRotas.forEach((rota) => {
+        const occurances = {};
+        rota.people.forEach((person) => {
+            person.roles?.forEach((role) => {
+                occurances[role] = occurances[role] ? occurances[role] + 1 : 1;
+            });
+        });
+        Object.entries(occurances).forEach(([key, value]) => {
+            allOccurances[key] = allOccurances[key]
+                ? Math.max(value, allOccurances[key])
+                : value;
+        });
+    });
+
+    const headerRow = Object.entries(allOccurances)
+        .map(([key, value]) => {
+            return Array(value).fill(key);
+        })
+        .flat()
+        .sort();
+
+    const rotaRows = sortedRotas.map((x) => {
+        console.log(x);
+        return [
+            new Date(x.date).toLocaleString("en-US", {
+                hour12: true,
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "numeric",
+            }),
+            ...createRotaRow(x.people, headerRow),
+        ];
+    });
+    const finalTable = [[undefined, ...headerRow], ...rotaRows];
+    // console.log(rotaRows, "rows");
+    return finalTable;
+};
+
+const createRotaRow = (peopleArray, headerRow) => {
+    const roleSet = new Set(headerRow);
+    const roleIndexCounter = {};
+    roleSet.forEach((role) => {
+        roleIndexCounter[role] = headerRow.findIndex((x) => x === role);
+    });
+    const rotaRow = Array(headerRow.length).fill("");
+    peopleArray.forEach((person) => {
+        const nameSplit = person.name?.split(" ");
+        const shortName = person.name
+            ? `${nameSplit[0]} ${nameSplit[nameSplit.length - 1][0]}`
+            : "";
+
+        person.roles?.forEach((role) => {
+            const columnIndex = roleIndexCounter[role];
+            rotaRow[columnIndex] = shortName;
+            roleIndexCounter[role] = roleIndexCounter[role] + 1;
+        });
+    });
+
+    return rotaRow;
+};
+
 const gsrun = async (cl) => {
     const gsapi = google.sheets({ version: "v4", auth: cl });
 
+    createTable();
+    console.log(createTable());
     const updateOptions = {
         spreadsheetId: "1jZTYClRKTowFPq5FIUNjJ-zpbyeD9LIDAwde4lHCQNE",
-        range: "A2",
+        range: "A1",
         valueInputOption: "USER_ENTERED",
-        resource: { values: createServiceHeaders() },
+        resource: { values: createTable() },
     };
-
+    console.log(createTable());
     const data = await gsapi.spreadsheets.values.update(updateOptions);
-    console.log(data.data);
+    // console.log(data.data);
 };
 
 const loadData = (path) => {

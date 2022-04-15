@@ -130,7 +130,7 @@ const parse = (strings) => {
         });
         return {
             date: x.date,
-            roles,
+            people: roles,
         };
     });
 };
