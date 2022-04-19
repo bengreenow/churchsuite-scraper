@@ -1,4 +1,6 @@
 const fs = require("fs");
+require("dotenv").config();
+const constants = require("./constants.js");
 
 const { google } = require("googleapis");
 
@@ -8,7 +10,7 @@ const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
 ]);
 let rotaData;
-client.authorize((err, tokens) => {
+client.authorize((err) => {
     if (err) {
         console.error(err);
     } else {
@@ -18,14 +20,6 @@ client.authorize((err, tokens) => {
     }
 });
 
-const createServiceHeaders = () => {
-    const result = rotaData.map((x) => {
-        return [x.serviceName];
-    });
-    console.log(result);
-    return result;
-};
-
 const createTable = () => {
     const flattenedRotas = rotaData
         .map((serviceSlot) => {
@@ -34,9 +28,19 @@ const createTable = () => {
             });
         })
         .flat(2);
-    const sortedRotas = flattenedRotas.sort((a, b) => {
-        return Date.parse(a.date) - Date.parse(b.date);
-    });
+
+    const veryEarlyToday = new Date();
+    veryEarlyToday.setHours(0);
+    veryEarlyToday.setMinutes(0);
+    veryEarlyToday.setSeconds(0);
+    const sortedRotas = flattenedRotas
+        .sort((a, b) => {
+            return Date.parse(a.date) - Date.parse(b.date);
+        })
+        .filter((x) => {
+            const rotaDate = new Date(x.date);
+            return rotaDate > veryEarlyToday;
+        });
 
     const allOccurances = {};
     sortedRotas.forEach((rota) => {
@@ -58,10 +62,13 @@ const createTable = () => {
             return Array(value).fill(key);
         })
         .flat()
-        .sort();
+        .sort(
+            (a, b) =>
+                constants?.idealHeaderOrder.indexOf(a) -
+                constants?.idealHeaderOrder.indexOf(b)
+        );
 
     const rotaRows = sortedRotas.map((x) => {
-        console.log(x);
         return [
             new Date(x.date).toLocaleString("en-US", {
                 hour12: true,
@@ -75,7 +82,6 @@ const createTable = () => {
         ];
     });
     const finalTable = [[undefined, ...headerRow], ...rotaRows];
-    // console.log(rotaRows, "rows");
     return finalTable;
 };
 
@@ -98,24 +104,18 @@ const createRotaRow = (peopleArray, headerRow) => {
             roleIndexCounter[role] = roleIndexCounter[role] + 1;
         });
     });
-
     return rotaRow;
 };
 
 const gsrun = async (cl) => {
     const gsapi = google.sheets({ version: "v4", auth: cl });
-
-    createTable();
-    console.log(createTable());
     const updateOptions = {
-        spreadsheetId: "1jZTYClRKTowFPq5FIUNjJ-zpbyeD9LIDAwde4lHCQNE",
+        spreadsheetId: process.env.SHEET_ID,
         range: "A1",
         valueInputOption: "USER_ENTERED",
         resource: { values: createTable() },
     };
-    console.log(createTable());
     const data = await gsapi.spreadsheets.values.update(updateOptions);
-    // console.log(data.data);
 };
 
 const loadData = (path) => {

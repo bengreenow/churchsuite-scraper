@@ -115,7 +115,6 @@ const parse = (strings) => {
 
     return HTMLObjects.map((x) => {
         const roles = x.html.querySelectorAll("[data-personid]").map((y) => {
-            // console.log(y.querySelector(".profile-name"));
             return {
                 personId: y.getAttribute("data-personid"),
                 roles: y.querySelector(".roles")?.textContent.split(", "),
