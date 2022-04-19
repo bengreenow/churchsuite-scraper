@@ -85,6 +85,19 @@ const createTable = () => {
     return finalTable;
 };
 
+const getPersonName = (name) => {
+    if (!name) return "";
+    if (constants.nicknameMap && constants.nicknameMap[name])
+        return constants.nicknameMap[name];
+
+    const nameSplit = name.split(" ");
+    const shortName = name
+        ? `${nameSplit[0]} ${nameSplit[nameSplit.length - 1][0]}`
+        : "";
+
+    return shortName;
+};
+
 const createRotaRow = (peopleArray, headerRow) => {
     const roleSet = new Set(headerRow);
     const roleIndexCounter = {};
@@ -93,14 +106,9 @@ const createRotaRow = (peopleArray, headerRow) => {
     });
     const rotaRow = Array(headerRow.length).fill("");
     peopleArray.forEach((person) => {
-        const nameSplit = person.name?.split(" ");
-        const shortName = person.name
-            ? `${nameSplit[0]} ${nameSplit[nameSplit.length - 1][0]}`
-            : "";
-
         person.roles?.forEach((role) => {
             const columnIndex = roleIndexCounter[role];
-            rotaRow[columnIndex] = shortName;
+            rotaRow[columnIndex] = getPersonName(person.name);
             roleIndexCounter[role] = roleIndexCounter[role] + 1;
         });
     });

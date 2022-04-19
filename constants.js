@@ -17,4 +17,7 @@ module.exports = {
         "Lights",
         "",
     ],
+    nicknameMap: {
+        "Andrew Street": "Traff",
+    },
 };
