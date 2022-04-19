@@ -9,3 +9,11 @@ TENET_NAME=examplechurch
 CHURCHSUITE_USERNAME=example@example.com
 CHURCHSUITE_PASSWORD=verysecure
 ```
+
+## Installation
+
+Clone to your local machine and run `yarn` to install node packages.
+
+You'll need `node`.
+
+To install `yarn` if you don't have it, run `npm install yarn -g`.
